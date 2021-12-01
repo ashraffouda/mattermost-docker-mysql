@@ -1,40 +1,35 @@
-FROM alpine:3.10
+FROM ubuntu
 
 # Some ENV variables
 ENV PATH="/mattermost/bin:${PATH}"
 ENV MM_VERSION=5.25.0
 
 # Build argument to set Mattermost edition
-ARG edition=enterprise
+ARG edition=team
 ARG PUID=2000
 ARG PGID=2000
 ARG MM_BINARY=
 
 
 # Install some needed packages
-RUN apk add --no-cache \
-	ca-certificates \
+RUN apt-get update \
+    && apt-get install -y \
 	curl \
 	jq \
-	libc6-compat \
+        sudo \
 	libffi-dev \
-    libcap \
-	linux-headers \
-	mailcap \
 	netcat-openbsd \
-	xmlsec-dev \
 	tzdata \
+        libcap2-bin \
 	&& rm -rf /tmp/*
-
 # Get Mattermost
 RUN mkdir -p /mattermost/data /mattermost/plugins /mattermost/client/plugins \
-    && if [ ! -z "$MM_BINARY" ]; then curl $MM_BINARY | tar -xvz ; \
-      elif [ "$edition" = "team" ] ; then curl https://releases.mattermost.com/$MM_VERSION/mattermost-team-$MM_VERSION-linux-amd64.tar.gz?src=docker-app | tar -xvz ; \
-      else curl https://releases.mattermost.com/$MM_VERSION/mattermost-$MM_VERSION-linux-amd64.tar.gz?src=docker-app | tar -xvz ; fi \
+    && curl http://172.17.0.1:8000/mattermost-team-linux-amd64.tar.gz | tar -xvz  \
     && cp /mattermost/config/config.json /config.json.save \
     && rm -rf /mattermost/config/config.json \
-    && addgroup -g ${PGID} mattermost \
-    && adduser -D -u ${PUID} -G mattermost -h /mattermost -D mattermost \
+    && addgroup --gid ${PGID} mattermost \
+    && useradd -p mattermost -d  /mattermost -u 2000 -m -g mattermost mattermost \
+    && usermod -G sudo mattermost \
     && chown -R mattermost:mattermost /mattermost /config.json.save /mattermost/plugins /mattermost/client/plugins \
     && setcap cap_net_bind_service=+ep /mattermost/bin/mattermost
 
