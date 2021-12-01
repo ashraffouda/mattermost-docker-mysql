@@ -16,15 +16,16 @@ RUN apt-get update \
     && apt-get install -y \
 	curl \
 	jq \
-        sudo \
+    sudo \
 	libffi-dev \
 	netcat-openbsd \
 	tzdata \
-        libcap2-bin \
+    libcap2-bin \
 	&& rm -rf /tmp/*
 # Get Mattermost
+COPY mattermost-team-linux-amd64.tar.gz /
 RUN mkdir -p /mattermost/data /mattermost/plugins /mattermost/client/plugins \
-    && curl http://172.17.0.1:8000/mattermost-team-linux-amd64.tar.gz | tar -xvz  \
+    && tar -xvf  mattermost-team-linux-amd64.tar.gz \
     && cp /mattermost/config/config.json /config.json.save \
     && rm -rf /mattermost/config/config.json \
     && addgroup --gid ${PGID} mattermost \
